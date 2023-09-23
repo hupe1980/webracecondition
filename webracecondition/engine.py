@@ -102,6 +102,9 @@ class Engine:
             round_trips[id].set_response(Response(headers[id], raw_body))
 
         return list(round_trips.values())
+    
+    def stream_sync_attack(self):
+        pass
 
     def generate_stream_id(self, idx: int) -> int:
         """

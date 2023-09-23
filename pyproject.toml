@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webracecondition"
-version = "0.0.2"
+version = "0.0.3"
 description = "Tiny package to test webraceconditions"
 authors = ["hupe1980"]
 repository = "https://github.com/hupe1980/webracecondition"
