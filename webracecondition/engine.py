@@ -77,7 +77,7 @@ class Engine:
 
         conn.set_timeout(timeout)
 
-        final_frames = []
+        final_seq = h2.H2Seq()
         round_trips: T.Dict[int, RoundTrip] = {}
 
         for idx, req in enumerate(self._requests):
@@ -107,7 +107,7 @@ class Engine:
             conn.send_frames(rframe)
 
             # Create the final DATA frame using scapy and store it
-            final_frames.append(
+            final_seq.frames.append(
                 h2.H2Frame(flags={"ES"}, stream_id=stream_id) / h2.H2DataFrame()
             )
 
@@ -118,7 +118,7 @@ class Engine:
         conn.send_frames(create_ping_frame())
 
         # Send the final frames to complete the requests
-        conn.send_frames(*final_frames)
+        conn.send_frames(*final_seq)
 
         # Listening for the answers on the connection
         headers, data = conn.read_answers(list(round_trips.keys()))
@@ -153,7 +153,7 @@ class Engine:
 
         round_trips: T.Dict[int, RoundTrip] = {}
 
-        chain_frames = []
+        chain_seq = h2.H2Seq()
 
         root_stream_id = self._generate_stream_id(0)
 
@@ -174,7 +174,7 @@ class Engine:
         if print_frames:
             root_frame.show()
 
-        chain_frames.append(root_frame)
+        chain_seq.frames.append(root_frame)
 
         dependency_stream_id = root_stream_id
 
@@ -201,9 +201,9 @@ class Engine:
             if print_frames:
                 rframe.show()
 
-            chain_frames.append(rframe)
+            chain_seq.frames.append(rframe)
 
-        race_req_frames = []
+        race_req_seq = h2.H2Seq()
 
         for idx, req in enumerate(self._requests):
             stream_id = self._generate_stream_id(
@@ -228,13 +228,13 @@ class Engine:
             if print_frames:
                 rframe.show()
 
-            race_req_frames.append(rframe)
+            race_req_seq.frames.append(rframe)
 
         # First send the long-running chain frames
-        conn.send_frames(*chain_frames)
+        conn.send_frames(*chain_seq)
 
         # Next, race request frames are sent to run concurrently after the long-running chain completes
-        conn.send_frames(*race_req_frames)
+        conn.send_frames(*race_req_seq)
 
         # Listening for the answers on the connection
         headers, data = conn.read_answers(list(round_trips.keys()))

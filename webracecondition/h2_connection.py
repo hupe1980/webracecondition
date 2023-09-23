@@ -72,8 +72,12 @@ class H2Connection(ABC):
                     stream.show()
                 if has_end_stream_set(frames):
                     closed_stream += 1
+                    logging.debug(
+                        f"Received EndStream {closed_stream}/{len(stream_ids)}"
+                    )
 
             if closed_stream >= len(stream_ids):
+                logging.info("All answers read...")
                 break
 
         # Structure used to store textual representation of the stream headers
