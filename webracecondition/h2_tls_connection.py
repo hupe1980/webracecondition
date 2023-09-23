@@ -65,6 +65,7 @@ class H2TLSConnection(H2Connection):
         return supersocket.SSLStreamSocket(ssl_sock, basecls=h2.H2Frame)
 
     def _setsockopt(self, raw_sock: socket.socket) -> None:
+        raw_sock.settimeout(30)
         raw_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 0)
         raw_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if hasattr(socket, "SO_REUSEPORT"):

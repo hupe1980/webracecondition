@@ -30,6 +30,11 @@ class Request:
     @property
     def headers(self) -> T.Dict[str, str]:
         headers = self._headers if self._headers is not None else {}
+        if self._body is None:
+            if "content-length" in headers:
+                del headers["content-length"]
+            return headers
+
         headers["content-length"] = self._get_content_length()
 
         return headers

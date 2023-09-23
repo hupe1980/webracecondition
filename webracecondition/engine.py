@@ -1,11 +1,32 @@
 import time
 import typing as T
 from urllib.parse import urlparse
-import scapy.contrib.http2 as scapy
+import scapy.contrib.http2 as h2
 
-from .frames import create_request_frames, create_ping_frame
+from .frames import (
+    create_request_frames,
+    create_dependant_request_frames,
+    create_ping_frame,
+)
 from .h2_tls_connection import H2TLSConnection
 from .roundtrip import Request, Response, RoundTrip
+
+
+class LongRunningChain:
+    def __init__(self, root: Request):
+        self._root = root
+        self._requests: T.List[Request] = []
+
+    @property
+    def root(self) -> Request:
+        return self._root
+
+    @property
+    def dependant_requests(self) -> T.List[Request]:
+        return self._requests
+
+    def add_request(self, req: Request) -> None:
+        self._requests.append(req)
 
 
 class Engine:
@@ -55,7 +76,7 @@ class Engine:
         round_trips: T.Dict[int, RoundTrip] = {}
 
         for idx, req in enumerate(self._requests):
-            stream_id = self.generate_stream_id(idx)
+            stream_id = self._generate_stream_id(idx)
 
             round_trips[stream_id] = RoundTrip(self._hostname, self._port)
             round_trips[stream_id].set_request(req)
@@ -82,7 +103,7 @@ class Engine:
 
             # Create the final DATA frame using scapy and store it
             final_frames.append(
-                scapy.H2Frame(flags={"ES"}, stream_id=stream_id) / scapy.H2DataFrame()
+                h2.H2Frame(flags={"ES"}, stream_id=stream_id) / h2.H2DataFrame()
             )
 
         # Sleep a little to make sure previous frames have been delivered
@@ -110,10 +131,118 @@ class Engine:
 
         return list(round_trips.values())
 
-    def stream_sync_attack(self) -> None:
-        pass
+    def stream_sync_attack(
+        self, long_running_chain: LongRunningChain, print_frames: bool = False
+    ) -> T.List[RoundTrip]:
+        conn = H2TLSConnection(
+            host=self._hostname,
+            port=self._port,
+            verify=self._verify,
+            print_frames=print_frames,
+        )
 
-    def generate_stream_id(self, idx: int) -> int:
+        round_trips: T.Dict[int, RoundTrip] = {}
+
+        chain_frames = []
+
+        root_stream_id = self._generate_stream_id(0)
+
+        round_trips[root_stream_id] = RoundTrip(self._hostname, self._port)
+        round_trips[root_stream_id].set_request(long_running_chain.root)
+
+        root_frame = create_request_frames(
+            scheme=self._scheme,
+            host=self._hostname,
+            port=self._port,
+            method=long_running_chain.root.method,
+            path=long_running_chain.root.path,
+            stream_id=root_stream_id,
+            headers=long_running_chain.root.headers,
+            body=long_running_chain.root.body,
+        )
+
+        if print_frames:
+            root_frame.show()
+
+        chain_frames.append(root_frame)
+
+        dependency_stream_id = root_stream_id
+
+        for idx, req in enumerate(long_running_chain.dependant_requests):
+            stream_id = self._generate_stream_id(idx + 1)
+
+            round_trips[stream_id] = RoundTrip(self._hostname, self._port)
+            round_trips[stream_id].set_request(req)
+
+            rframe = create_dependant_request_frames(
+                scheme=self._scheme,
+                host=self._hostname,
+                port=self._port,
+                method=req.method,
+                path=req.path,
+                stream_id=stream_id,
+                dependency_stream_id=dependency_stream_id,
+                headers=req.headers,
+                body=req.body,
+            )
+
+            dependency_stream_id = stream_id
+
+            if print_frames:
+                rframe.show()
+
+            chain_frames.append(rframe)
+
+        race_req_frames = []
+
+        for idx, req in enumerate(self._requests):
+            stream_id = self._generate_stream_id(
+                idx + len(long_running_chain.dependant_requests) + 1
+            )
+
+            round_trips[stream_id] = RoundTrip(self._hostname, self._port)
+            round_trips[stream_id].set_request(req)
+
+            rframe = create_dependant_request_frames(
+                scheme=self._scheme,
+                host=self._hostname,
+                port=self._port,
+                method=req.method,
+                path=req.path,
+                stream_id=stream_id,
+                dependency_stream_id=dependency_stream_id,
+                headers=req.headers,
+                body=req.body,
+            )
+
+            if print_frames:
+                rframe.show()
+
+            race_req_frames.append(rframe)
+
+        # First send the long-running chain frames
+        conn.send_frames(*chain_frames)
+
+        # Next, race request frames are sent to run concurrently after the long-running chain completes
+        conn.send_frames(*race_req_frames)
+
+        # Listening for the answers on the connection
+        headers, data = conn.read_answers(list(round_trips.keys()))
+
+        # Close the connection
+        conn.close()
+
+        for id in round_trips.keys():
+            raw_body = b""
+            for frgmt in data[id]:
+                if frgmt.len != 0:
+                    raw_body += frgmt.payload.data
+
+            round_trips[id].set_response(Response(headers[id], raw_body))
+
+        return list(round_trips.values())
+
+    def _generate_stream_id(self, idx: int) -> int:
         """
         Generates a valid client-side stream ID for passed index (positive odd integer).
         :param idx: the index for which an ID should be generated

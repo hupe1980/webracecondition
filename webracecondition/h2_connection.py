@@ -15,6 +15,10 @@ from .frames import (
     create_settings_frame,
 )
 
+MAX_HEADER_TABLE_SIZE = (1 << 16) - 1
+MAX_FRAME_SIZE = (1 << 24) - 1
+WIN_SIZE = (1 << 31) - 1
+
 
 class H2Connection(ABC):
     """
@@ -74,7 +78,10 @@ class H2Connection(ABC):
         # Structure used to store data from each stream
         data: T.Dict[int, h2.H2Frame] = {}
 
-        srv_tblhdr = h2.HPackHdrTable()
+        srv_tblhdr = h2.HPackHdrTable(
+            dynamic_table_max_size=MAX_HEADER_TABLE_SIZE,
+            dynamic_table_cap_size=MAX_HEADER_TABLE_SIZE,
+        )
         for frame in stream.frames:
             # If this frame is a header
             if is_frame_type(frame, h2.H2HeadersFrame):
@@ -138,17 +145,13 @@ class H2Connection(ABC):
         logging.info("Acked server settings")
 
     def _send_initial_settings(self) -> None:
-        max_frm_sz = (1 << 24) - 1
-        max_hdr_tbl_sz = (1 << 16) - 1
-        win_sz = (1 << 31) - 1
-
         settings = [
             h2.H2Setting(id=h2.H2Setting.SETTINGS_ENABLE_PUSH, value=0),
-            h2.H2Setting(id=h2.H2Setting.SETTINGS_INITIAL_WINDOW_SIZE, value=win_sz),
+            h2.H2Setting(id=h2.H2Setting.SETTINGS_INITIAL_WINDOW_SIZE, value=WIN_SIZE),
             h2.H2Setting(
-                id=h2.H2Setting.SETTINGS_HEADER_TABLE_SIZE, value=max_hdr_tbl_sz
+                id=h2.H2Setting.SETTINGS_HEADER_TABLE_SIZE, value=MAX_HEADER_TABLE_SIZE
             ),
-            h2.H2Setting(id=h2.H2Setting.SETTINGS_MAX_FRAME_SIZE, value=max_frm_sz),
+            h2.H2Setting(id=h2.H2Setting.SETTINGS_MAX_FRAME_SIZE, value=MAX_FRAME_SIZE),
             h2.H2Setting(id=h2.H2Setting.SETTINGS_MAX_CONCURRENT_STREAMS, value=1000),
         ]
 

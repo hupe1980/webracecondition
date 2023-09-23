@@ -1,7 +1,7 @@
 from .h2_connection import H2Connection
 from .h2_tls_connection import H2TLSConnection
 
-from .engine import Engine
+from .engine import Engine, LongRunningChain
 from .frames import (
     create_request_frames,
     create_dependant_request_frames,
@@ -34,6 +34,7 @@ __all__ = (
     "has_end_stream_set",
     "gen_stream_ids",
     "Engine",
+    "LongRunningChain",
     "Request",
     "Response",
     "RoundTrip",
