@@ -9,7 +9,7 @@ from .roundtrip import Request, Response, RoundTrip
 
 
 class Engine:
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, verify: bool = False):
         parsed_url = urlparse(base_url)
 
         if parsed_url.scheme == "https":
@@ -23,6 +23,7 @@ class Engine:
             raise AssertionError("Hostname cannot be empty")
 
         self._port = 443 if parsed_url.port is None else parsed_url.port
+        self._verify = verify
         self._requests: T.List[Request] = []
 
     @property
@@ -43,7 +44,12 @@ class Engine:
     def last_frame_sync_attack(
         self, sleep_time: float = 100 / 1000, print_frames: bool = False
     ) -> T.List[RoundTrip]:
-        conn = H2TLSConnection(self._hostname, self._port, print_frames=print_frames)
+        conn = H2TLSConnection(
+            host=self._hostname,
+            port=self._port,
+            verify=self._verify,
+            print_frames=print_frames,
+        )
 
         final_frames = []
         round_trips: T.Dict[int, RoundTrip] = {}
@@ -62,6 +68,7 @@ class Engine:
                 path=req.path,
                 stream_id=stream_id,
                 headers=req.headers,
+                body=req.body,
             )
 
             if print_frames:
@@ -102,8 +109,8 @@ class Engine:
             round_trips[id].set_response(Response(headers[id], raw_body))
 
         return list(round_trips.values())
-    
-    def stream_sync_attack(self):
+
+    def stream_sync_attack(self) -> None:
         pass
 
     def generate_stream_id(self, idx: int) -> int:

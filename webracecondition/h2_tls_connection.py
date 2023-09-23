@@ -17,12 +17,14 @@ class H2TLSConnection(H2Connection):
         self,
         host: str,
         port: int = 443,
+        verify: bool = False,
         ssl_ctx: ssl.SSLContext = ssl.create_default_context(),
         print_frames: bool = True,
     ):
         if not ssl.HAS_ALPN:
             raise AssertionError("TLS ALPN extension is required for HTTP/2 over TLS")
 
+        self._verify = verify
         self._ssl_ctx = ssl_ctx
         super().__init__(host, port, print_frames=print_frames)
 
@@ -48,6 +50,10 @@ class H2TLSConnection(H2Connection):
 
         raw_sock = socket.socket(addrinfo[0], addrinfo[1], addrinfo[2])
         self._setsockopt(raw_sock)
+
+        if not self._verify:
+            self._ssl_ctx.check_hostname = False
+            self._ssl_ctx.verify_mode = ssl.CERT_NONE
 
         self._ssl_ctx.set_alpn_protocols(["h2"])
         ssl_sock = self._ssl_ctx.wrap_socket(raw_sock, server_hostname=self.host)

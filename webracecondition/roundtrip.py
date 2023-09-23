@@ -11,10 +11,32 @@ class Request:
         path: str,
         headers: T.Optional[T.Dict[str, str]] = None,
         params: T.Optional[T.Dict[str, T.Any]] = None,
+        body: T.Optional[bytes] = None,
     ):
-        self.method = method.upper()
-        self.path = self._create_path(path, params)
-        self.headers = headers
+        self._method = method
+        self._path = self._create_path(path, params)
+        self._headers = headers
+        self._params = params
+        self._body = body
+
+    @property
+    def method(self) -> str:
+        return self._method.upper()
+
+    @property
+    def path(self) -> str:
+        return self._create_path(self._path, self._params)
+
+    @property
+    def headers(self) -> T.Dict[str, str]:
+        headers = self._headers if self._headers is not None else {}
+        headers["content-length"] = self._get_content_length()
+
+        return headers
+
+    @property
+    def body(self) -> T.Optional[bytes]:
+        return self._body
 
     def _create_path(self, path: str, params: T.Optional[T.Dict[str, T.Any]]) -> str:
         query_string = ""
@@ -22,6 +44,11 @@ class Request:
             query_string = urlencode(params)
 
         return path if query_string == "" else f"{path}?{query_string}"
+
+    def _get_content_length(self) -> str:
+        if self._body is None:
+            return "0"
+        return str(len(self._body))
 
 
 class Response:
@@ -46,7 +73,7 @@ class Response:
         for line in self._headers.split("\n")[1:]:
             if ":" in line:
                 key, value = line.split(":", 1)
-                key = key.strip()  # Remove leading/trailing spaces
+                key = key.strip().lower()  # Remove leading/trailing spaces
                 value = value.strip()  # Remove leading/trailing spaces
                 headers[key] = value
 
