@@ -63,7 +63,10 @@ class Engine:
         self._requests.append(req)
 
     def last_frame_sync_attack(
-        self, sleep_time: float = 100 / 1000, print_frames: bool = False
+        self,
+        sleep_time: float = 100 / 1000,
+        timeout: float = 30,
+        print_frames: bool = False,
     ) -> T.List[RoundTrip]:
         conn = H2TLSConnection(
             host=self._hostname,
@@ -71,6 +74,8 @@ class Engine:
             verify=self._verify,
             print_frames=print_frames,
         )
+
+        conn.set_timeout(timeout)
 
         final_frames = []
         round_trips: T.Dict[int, RoundTrip] = {}
@@ -132,7 +137,10 @@ class Engine:
         return list(round_trips.values())
 
     def stream_sync_attack(
-        self, long_running_chain: LongRunningChain, print_frames: bool = False
+        self,
+        long_running_chain: LongRunningChain,
+        timeout: float = 30,
+        print_frames: bool = False,
     ) -> T.List[RoundTrip]:
         conn = H2TLSConnection(
             host=self._hostname,
@@ -140,6 +148,8 @@ class Engine:
             verify=self._verify,
             print_frames=print_frames,
         )
+
+        conn.set_timeout(timeout)
 
         round_trips: T.Dict[int, RoundTrip] = {}
 

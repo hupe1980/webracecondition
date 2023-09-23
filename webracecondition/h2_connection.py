@@ -52,6 +52,9 @@ class H2Connection(ABC):
     def close(self) -> None:
         self.sock.close()
 
+    def set_timeout(self, value: float) -> None:
+        self.sock.ins.settimeout(value)
+
     def read_answers(
         self, stream_ids: T.List[int]
     ) -> T.Tuple[T.Dict[int, str], T.Dict[int, h2.H2Frame]]:
