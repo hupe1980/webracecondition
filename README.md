@@ -1,4 +1,6 @@
 # webracecondition
+![Build Status](https://github.com/hupe1980/webracecondition/workflows/Build/badge.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 > Tiny package to test webraceconditions
 
 Web race conditions, also known as web application race conditions or simply race conditions, refer to a class of software vulnerabilities that can occur in web applications when multiple users or processes attempt to access and modify shared resources or data concurrently. These vulnerabilities arise due to the unpredictable interleaving of execution threads or processes, and they can lead to unintended and potentially harmful consequences.
