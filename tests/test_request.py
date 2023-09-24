@@ -12,3 +12,8 @@ def test_request_content_lenght() -> None:
 def test_request_content_lenght_empty_body() -> None:
     request = Request("get", "/")
     assert "content-length" not in request.headers
+
+def test_request_cookies() -> None:
+    request = Request("get", "/", cookies={"foo": "foo", "bar": "bar"})
+    assert "cookie" in request.headers
+    assert request.headers["cookie"] == "foo=foo; bar=bar"

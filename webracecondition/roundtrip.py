@@ -9,12 +9,14 @@ class Request:
         method: str,
         path: str,
         headers: T.Optional[T.Dict[str, str]] = None,
+        cookies: T.Optional[T.Dict[str, str]] = None,
         params: T.Optional[T.Dict[str, T.Any]] = None,
         body: T.Optional[bytes] = None,
     ):
         self._method = method
         self._path = self._create_path(path, params)
         self._headers = headers
+        self._cookies = cookies
         self._params = params
         self._body = body
 
@@ -37,15 +39,26 @@ class Request:
             # but don't provide one. (i.e. not GET or HEAD)
             if self.method not in ["GET", "HEAD"]:
                 headers["content-length"] = "0"
-            return headers
+        else:
+            headers["content-length"] = self._get_content_length()
 
-        headers["content-length"] = self._get_content_length()
+        if self._cookies is not None:
+            headers["cookie"] = self._prepare_cookie_header()
 
         return headers
 
     @property
     def body(self) -> T.Optional[bytes]:
         return self._body
+
+    def _prepare_cookie_header(self) -> str:
+        if self._cookies is None:
+            return ""
+
+        cookie_header = "; ".join(
+            [f"{key}={value}" for key, value in self._cookies.items()]
+        )
+        return cookie_header
 
     def _create_path(self, path: str, params: T.Optional[T.Dict[str, T.Any]]) -> str:
         query_string = ""

@@ -64,6 +64,7 @@ class Engine:
 
     def last_frame_sync_attack(
         self,
+        last_byte_sync: bool = True,
         sleep_time: float = 100 / 1000,
         timeout: float = 30,
         print_frames: bool = False,
@@ -87,8 +88,8 @@ class Engine:
             round_trips[stream_id].set_request(req)
 
             last_byte = None
-            body = None
-            if req.body is not None:
+            body = req.body
+            if req.body is not None and last_byte_sync:
                 last_byte = req.body[-1:]
                 body = req.body[:-1]
 
