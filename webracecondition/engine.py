@@ -5,7 +5,7 @@ import scapy.contrib.http2 as h2
 
 from .frames import (
     create_request_frames,
-    create_dependant_request_frames,
+    create_dependent_request_frames,
     create_ping_frame,
 )
 from .h2_tls_connection import H2TLSConnection
@@ -22,7 +22,7 @@ class LongRunningChain:
         return self._root
 
     @property
-    def dependant_requests(self) -> T.List[Request]:
+    def dependent_requests(self) -> T.List[Request]:
         return self._requests
 
     def add_request(self, req: Request) -> None:
@@ -144,7 +144,7 @@ class Engine:
 
         return list(round_trips.values())
 
-    def dependant_streams_attack(
+    def dependent_streams_attack(
         self,
         long_running_chain: LongRunningChain,
         timeout: float = 30,
@@ -186,13 +186,13 @@ class Engine:
 
         dependency_stream_id = root_stream_id
 
-        for idx, req in enumerate(long_running_chain.dependant_requests):
+        for idx, req in enumerate(long_running_chain.dependent_requests):
             stream_id = self._generate_stream_id(idx + 1)
 
             round_trips[stream_id] = RoundTrip(self._hostname, self._port)
             round_trips[stream_id].set_request(req)
 
-            rframe = create_dependant_request_frames(
+            rframe = create_dependent_request_frames(
                 scheme=self._scheme,
                 host=self._hostname,
                 port=self._port,
@@ -215,13 +215,13 @@ class Engine:
 
         for idx, req in enumerate(self._requests):
             stream_id = self._generate_stream_id(
-                idx + len(long_running_chain.dependant_requests) + 1
+                idx + len(long_running_chain.dependent_requests) + 1
             )
 
             round_trips[stream_id] = RoundTrip(self._hostname, self._port)
             round_trips[stream_id].set_request(req)
 
-            rframe = create_dependant_request_frames(
+            rframe = create_dependent_request_frames(
                 scheme=self._scheme,
                 host=self._hostname,
                 port=self._port,

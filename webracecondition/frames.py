@@ -42,7 +42,7 @@ def create_request_frames(
     )
 
 
-def create_dependant_request_frames(
+def create_dependent_request_frames(
     scheme: str,
     host: str,
     port: int,

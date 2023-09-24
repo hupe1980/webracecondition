@@ -30,7 +30,7 @@ for roundtrip in engine.last_frame_sync_attack():
     print(roundtrip)
 ```
 
-## Dependant-Streams Attack
+## Dependent-Streams Attack
 The Dependent-Streams Attack leverages HTTP/2's dependent streams feature to induce web race conditions by coordinating the concurrent execution of scheduled requests. It entails dispatching an extensive chain of requests, followed by numerous requests that depend on the final request in the chain.
 
 ```python
@@ -45,7 +45,7 @@ chain = LongRunningChain(Request("GET", "/long"))
 for i in range(10):
     chain.add_request(chain.root)
 
-for roundtrip in engine.dependant_streams_attack(chain):
+for roundtrip in engine.dependent_streams_attack(chain):
     print(roundtrip)
 ```
 

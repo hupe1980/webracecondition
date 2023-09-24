@@ -4,7 +4,7 @@ from .h2_tls_connection import H2TLSConnection
 from .engine import Engine, LongRunningChain
 from .frames import (
     create_request_frames,
-    create_dependant_request_frames,
+    create_dependent_request_frames,
     create_ping_frame,
     create_priority_frame,
     create_settings_frame,
@@ -22,7 +22,7 @@ __all__ = (
     "H2Connection",
     "H2TLSConnection",
     "create_request_frames",
-    "create_dependant_request_frames",
+    "create_dependent_request_frames",
     "create_ping_frame",
     "create_priority_frame",
     "create_settings_frame",
