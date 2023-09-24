@@ -1,4 +1,5 @@
 import re
+from json import dumps
 import typing as T
 from urllib.parse import urlencode
 
@@ -11,14 +12,16 @@ class Request:
         headers: T.Optional[T.Dict[str, str]] = None,
         cookies: T.Optional[T.Dict[str, str]] = None,
         params: T.Optional[T.Dict[str, T.Any]] = None,
-        body: T.Optional[bytes] = None,
+        data: T.Optional[T.Dict[str, T.Any]] = None,
+        json: T.Optional[T.Dict[str, T.Any]] = None,
+        raw_body: T.Optional[bytes] = None,
     ):
         self._method = method
         self._path = self._create_path(path, params)
-        self._headers = headers
+        self._headers = headers if headers is not None else {}
         self._cookies = cookies
         self._params = params
-        self._body = body
+        self._body = self._prepare_body(data=data, json=json, raw_body=raw_body)
 
     @property
     def method(self) -> str:
@@ -26,7 +29,7 @@ class Request:
 
     @property
     def path(self) -> str:
-        return self._create_path(self._path, self._params)
+        return self._path
 
     @property
     def headers(self) -> T.Dict[str, str]:
@@ -51,6 +54,25 @@ class Request:
     def body(self) -> T.Optional[bytes]:
         return self._body
 
+    def _prepare_body(
+        self,
+        data: T.Optional[T.Dict[str, T.Any]] = None,
+        json: T.Optional[T.Dict[str, T.Any]] = None,
+        raw_body: T.Optional[bytes] = None,
+    ) -> T.Optional[bytes]:
+        if json is None and data is None and raw_body is None:
+            return None
+        elif json is not None and data is None and raw_body is None:
+            self._headers["content-type"] = "application/json"
+            return dumps(json, allow_nan=False).encode("utf-8")
+        elif data is not None and json is None and raw_body is None:
+            self._headers["content-type"] = "application/x-www-form-urlencoded"
+            return urlencode(data).encode("utf-8")
+        elif raw_body is not None and data is None and json is None:
+            return raw_body
+
+        raise ValueError("Only one of data, json, or raw_body should be set")
+
     def _prepare_cookie_header(self) -> str:
         if self._cookies is None:
             return ""
@@ -60,12 +82,13 @@ class Request:
         )
         return cookie_header
 
-    def _create_path(self, path: str, params: T.Optional[T.Dict[str, T.Any]]) -> str:
-        query_string = ""
+    def _create_path(
+        self, path: str, params: T.Optional[T.Dict[str, T.Any]] = None
+    ) -> str:
         if params is not None:
-            query_string = urlencode(params)
+            return f"{path}?{urlencode(params)}"
 
-        return path if query_string == "" else f"{path}?{query_string}"
+        return path
 
     def _get_content_length(self) -> str:
         if self._body is None:

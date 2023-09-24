@@ -20,7 +20,7 @@ from webracecondition import Engine, Request
 
 engine = Engine("https://your-target.com")
 for i in range(20):
-    engine.add_request(Request("GET", "/demo"))
+    engine.add_request(Request("GET", "/race"))
 
 for roundtrip in engine.last_frame_sync_attack():
     print(roundtrip)
@@ -33,7 +33,7 @@ from webracecondition import Engine, Request, LongRunningChain
 engine = Engine("https://your-target.com")
 
 for i in range(20):
-    engine.add_request(Request("GET", "/demo")
+    engine.add_request(Request("GET", "/race")
 
 chain = LongRunningChain(Request("GET", "/long"))
 for i in range(10):
