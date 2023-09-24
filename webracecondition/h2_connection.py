@@ -188,4 +188,4 @@ class H2Connection(ABC):
                 return self.sock.recv(MTU)
             except AssertionError:
                 # Frame parsing failed on current data, try again in 100 ms
-                time.sleep(0.1)
+                time.sleep(100 / 1000)

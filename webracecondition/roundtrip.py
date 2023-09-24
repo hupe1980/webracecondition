@@ -30,9 +30,14 @@ class Request:
     @property
     def headers(self) -> T.Dict[str, str]:
         headers = self._headers if self._headers is not None else {}
+        if "content-length" in headers:
+            del headers["content-length"]
+
         if self._body is None:
-            if "content-length" in headers:
-                del headers["content-length"]
+            # Set Content-Length to 0 for methods that can have a body
+            # but don't provide one. (i.e. not GET or HEAD)
+            if self.method not in ["GET", "HEAD"]:
+                headers["content-length"] = "0"
             return headers
 
         headers["content-length"] = self._get_content_length()

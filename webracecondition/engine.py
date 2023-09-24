@@ -86,6 +86,12 @@ class Engine:
             round_trips[stream_id] = RoundTrip(self._hostname, self._port)
             round_trips[stream_id].set_request(req)
 
+            last_byte = None
+            body = None
+            if req.body is not None:
+                last_byte = req.body[-1:]
+                body = req.body[:-1]
+
             rframe = create_request_frames(
                 scheme=self._scheme,
                 host=self._hostname,
@@ -94,7 +100,7 @@ class Engine:
                 path=req.path,
                 stream_id=stream_id,
                 headers=req.headers,
-                body=req.body,
+                body=body,
             )
 
             if print_frames:
@@ -108,7 +114,8 @@ class Engine:
 
             # Create the final DATA frame using scapy and store it
             final_seq.frames.append(
-                h2.H2Frame(flags={"ES"}, stream_id=stream_id) / h2.H2DataFrame()
+                h2.H2Frame(flags={"ES"}, stream_id=stream_id)
+                / h2.H2DataFrame(data=last_byte)
             )
 
         # Sleep a little to make sure previous frames have been delivered
@@ -136,7 +143,7 @@ class Engine:
 
         return list(round_trips.values())
 
-    def stream_sync_attack(
+    def dependant_streams_attack(
         self,
         long_running_chain: LongRunningChain,
         timeout: float = 30,
