@@ -38,6 +38,7 @@ def create_request_frames(
         stream_id=stream_id,
         body=body,
         is_sensitive=lambda hdr_name, hdr_val: hdr_name in ["authorization", "cookie"],
+        # should_index=lambda hdr_name: hdr_name in [],
     )
 
 
