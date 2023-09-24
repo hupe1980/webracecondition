@@ -1,4 +1,3 @@
-import io
 import re
 import typing as T
 from urllib.parse import urlencode
@@ -104,13 +103,10 @@ class RoundTrip:
         self.response = response
 
     def __str__(self) -> str:
-        buffer = io.StringIO()
-        if self.response is not None:
-            buffer.write(f"HTTP/2 {self.response.status_code}\n")
-            for k, v in self.response.headers.items():
-                buffer.write(f"{k}: {v}\n")
-        buffer.write("\n\n")
-        if self.response is not None:
-            buffer.write(self.response.raw.decode("UTF-8", "ignore"))
-
-        return buffer.getvalue()
+        if self.request is not None and self.response is not None:
+            return f"{self.request.method} {self.request.path} HTTP/2: {self.response.status_code}"
+        if self.request is None and self.response is not None:
+            return f"??? ??? HTTP/2: {self.response.status_code}"
+        if self.response is None and self.request is not None:
+            return f"{self.request.method} {self.request.path} HTTP/2: ???"
+        return "??? ??? HTTP/2: ???"

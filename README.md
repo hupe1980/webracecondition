@@ -8,7 +8,7 @@
 pip install webracecondition
 ```
 
-## How to use
+## Last-Frame-Sync Attack
 ```python
 from webracecondition import Engine, Request
 
@@ -17,6 +17,23 @@ for i in range(20):
     engine.add_request(Request("GET", "/demo"))
 
 for roundtrip in engine.last_frame_sync_attack():
+    print(roundtrip)
+```
+
+## Dependant-Streams Attack
+```python
+from webracecondition import Engine, Request, LongRunningChain
+
+engine = Engine("https://your-target.com")
+
+for i in range(20):
+    engine.add_request(Request("GET", "/demo")
+
+chain = LongRunningChain(Request("GET", "/long"))
+for i in range(10):
+    chain.add_request(chain.root)
+
+for roundtrip in engine.dependant_streams_attack(chain):
     print(roundtrip)
 ```
 
