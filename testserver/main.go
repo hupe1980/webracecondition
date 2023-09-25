@@ -13,17 +13,22 @@ func main() {
 	srv := &http.Server{Addr: ":8443", Handler: http.HandlerFunc(handle)}
 	// Start the server with TLS.
 	log.Printf("Serving on https://0.0.0.0:8443")
+	// openssl req -newkey rsa:2048 -nodes -keyout server.key -x509 -days 365 -out server.crt
 	log.Fatal(srv.ListenAndServeTLS("server.crt", "server.key"))
 }
 
 // race
 var idx = 0
 
+// var mu sync.RWMutex
+
 func handle(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/long" {
 		time.Sleep(3 * time.Second)
 	}
 
+	//mu.Lock()
+	//defer mu.Unlock()
 	idx++
 
 	// Log the request protocol
